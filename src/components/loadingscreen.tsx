@@ -1,101 +1,95 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import trailerVideo from '@/assets/loading.mp4';
+import loadingAudio from '@/assets/loadingmusic.mp3'; // Import your audio file
 
 const LoadingScreen = ({ onComplete }) => {
   const videoRef = useRef(null);
-  const [showVideo, setShowVideo] = useState(true);
-  const [videoError, setVideoError] = useState(false);
+  const audioRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const audio = audioRef.current;
 
-    // First try to play with sound
-    const playVideo = () => {
-      video.play()
-        .then(() => console.log("Video playing successfully"))
-        .catch(err => {
-          console.log("Autoplay failed, trying muted:", err);
-          video.muted = true;
-          video.play()
-            .then(() => console.log("Video playing muted"))
-            .catch(err => {
-              console.error("Video failed completely:", err);
-              setVideoError(true);
-              setTimeout(onComplete, 2000); // Skip after 2s if video fails
-            });
-        });
+    if (!video || !audio) return;
+
+    // When both media are ready
+    const handleCanPlay = () => {
+      const playMedia = () => {
+        video.play()
+          .then(() => audio.play())
+          .catch(() => {
+            // Fallback muted if autoplay fails
+            video.muted = true;
+            audio.muted = true;
+            video.play().then(() => audio.play());
+          })
+          .finally(() => setIsReady(true));
+      };
+
+      if (video.readyState > 3 && audio.readyState > 3) {
+        playMedia();
+      } else {
+        video.addEventListener('canplay', playMedia, { once: true });
+        audio.addEventListener('canplay', playMedia, { once: true });
+      }
     };
 
-    // Different strategies to start playback
-    const handleCanPlay = () => playVideo();
-    const handleLoadedData = () => playVideo();
+    // Auto-complete after 10s
+    const timer = setTimeout(onComplete, 10000);
 
-    video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('error', () => setVideoError(true));
-
-    // Fallback timeout if nothing works
-    const fallbackTimer = setTimeout(() => {
-      if (video.readyState < 3) { // If video not loaded yet
-        setVideoError(true);
-        onComplete();
-      }
-    }, 3000);
+    // Start loading media
+    handleCanPlay();
 
     return () => {
-      clearTimeout(fallbackTimer);
-      video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('loadeddata', handleLoadedData);
+      clearTimeout(timer);
       video.pause();
+      audio.pause();
     };
   }, [onComplete]);
 
   return (
     <AnimatePresence>
-      {showVideo && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-        >
-          {/* Video Player with Multiple Fallbacks */}
-          {!videoError ? (
-            <video
-              ref={videoRef}
-              src={trailerVideo}
-              muted={false}
-              playsInline
-              loop={false}
-              preload="auto"
-              className="w-full h-full object-cover"
-              onEnded={onComplete}
-            >
-              <source src={trailerVideo} type="video/mp4" />
-            </video>
-          ) : (
-            <div className="text-white text-center p-8">
-              <p className="text-2xl mb-4">Video unavailable</p>
-              <button 
-                onClick={onComplete}
-                className="px-6 py-2 bg-amber-600 hover:bg-amber-700 transition-colors"
-              >
-                ENTER SITE
-              </button>
-            </div>
-          )}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      >
+        {/* Video Element */}
+        <video
+          ref={videoRef}
+          src={trailerVideo}
+          muted={false}
+          playsInline
+          preload="auto"
+          className="w-full h-full object-cover"
+        />
 
-          {/* Loading Text (shown even if video fails) */}
-          <div className="absolute bottom-20 left-0 right-0 text-center">
-            <p className="font-bebas text-2xl text-amber-400 tracking-widest">
-              BY ORDER OF THE PEAKY HACKERS
-            </p>
+        {/* Audio Element (hidden) */}
+        <audio
+          ref={audioRef}
+          src={loadingAudio}
+          preload="auto"
+        />
+
+        {/* Loading Indicator */}
+        {!isReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="animate-pulse font-bebas text-2xl text-amber-400">
+              LOADING THE SYNDICATE...
+            </div>
           </div>
-        </motion.div>
-      )}
+        )}
+
+        {/* Peaky Blinders Text */}
+        <div className="absolute bottom-20 left-0 right-0 text-center">
+          <p className="font-bebas text-2xl text-amber-400 tracking-widest">
+            BY ORDER OF THE PEAKY HACKERS
+          </p>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 };
