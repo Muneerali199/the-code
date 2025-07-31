@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import LoadingScreen from '@/components/loadingscreen';
 import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
@@ -9,15 +10,16 @@ import Register from '@/components/Register';
 import Footer from '@/components/Footer';
 import AudioPlayer from '@/components/audioplayer';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-
-// Import your audio file from assets
 import backgroundMusic from '@/assets/music.mp3';
 
 const Index = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
   useScrollAnimation();
 
   useEffect(() => {
-    // Smooth scrolling for the entire page
+    setIsMounted(true);
     document.documentElement.style.scrollBehavior = 'smooth';
     
     return () => {
@@ -27,17 +29,23 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      <Navigation />
-      <Hero />
-      <About />
-      <Themes />
-      <Timeline />
-      <Prizes />
-      <Register />
-      <Footer />
-      
-      {/* Add the AudioPlayer component with your audio file */}
-      <AudioPlayer audioSrc={backgroundMusic} />
+      {/* Loading Screen */}
+      {isLoading && isMounted && (
+        <LoadingScreen onComplete={() => setIsLoading(false)} />
+      )}
+
+      {/* Main Content (always in DOM but hidden during loading) */}
+      <div className={isLoading ? 'hidden' : 'block'}>
+        <Navigation />
+        <Hero />
+        <About />
+        <Themes />
+        <Timeline />
+        <Prizes />
+        <Register />
+        <Footer />
+        <AudioPlayer audioSrc={backgroundMusic} />
+      </div>
     </div>
   );
 };
