@@ -7,7 +7,11 @@ import Timeline from '@/components/Timeline';
 import Prizes from '@/components/Prizes';
 import Register from '@/components/Register';
 import Footer from '@/components/Footer';
+import AudioPlayer from '@/components/audioplayer';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+
+// Import your audio file from assets
+import backgroundMusic from '@/assets/music.mp3';
 
 const Index = () => {
   useScrollAnimation();
@@ -31,6 +35,9 @@ const Index = () => {
       <Prizes />
       <Register />
       <Footer />
+      
+      {/* Add the AudioPlayer component with your audio file */}
+      <AudioPlayer audioSrc={backgroundMusic} />
     </div>
   );
 };
